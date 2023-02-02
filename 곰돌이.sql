@@ -475,3 +475,165 @@ commit ;
 -- 판매가는 21,000일때, \21,000.00의 형식으로 출력하세요. 
 -- 단, 주문 일자가, 존재하지 않으면 현재 시각으로 출력하세요.
 -- 주문 일자는 '2014年 07月 13日'의 형식으로 출력하세요. 
+
+-- 그룹(집계) 함수
+-- books 테이블에 대하여 다음과 같은 집계 함수 사용법에 대한 물음에 필요한 sql 구문을 작성해 보세요.
+-- 차후 실습을 위하여 다음 문장을 우선 수행하도록 합니다.
+-- 
+update books set price = abs(price) ;
+commit ;
+-- 
+-- 총 서적은 몇 권인가요?
+select count(bname) from books;
+-- 단가가 정해진 서적은 총 몇 권인가요?
+select count(price) from books; 
+-- count(*)와 count(price)를 사용하여 단가가 null인 행 개수를 구해 보세요.
+select count(price) from books ;
+select count(*) from books ;
+-- 출판사의 갯수는 총 몇 개인가요? 
+select count(publisher) from books ;
+-- 모든 서적들의 단가의 평균 값을 소수점 2째자리까지 구해 보세요. 
+select avg(price) from books;
+-- 단가의 평균을 구하되, null인 서적은 100으로 치환하여 계산하세요. 
+select avg(nvl(price,100)) from books;
+-- 단가의 총합을 구해 보세요. 
+select sum(price) from books;
+-- 단가의 총금액을 구하되, null인 서적은 100으로 치환하여 계산하세요. 
+select sum(nvl(price,100)) from books;
+-- 책의 최저 단가와 최고 단가는 각각 얼마인가? 
+select max(price), min(price) from books;
+-- 출판사 이름을 기준으로 오름차순 정렬시 가장 먼저 조회되는 출판사는 어디인가요?
+select publisher, count(*) as cnt
+from books
+group by publisher order by publisher asc ;
+
+-- 출판사 이름을 기준으로 오름차순 정렬시 가장 나중에 조회되는 출판사는 어디인가요? 
+select publisher, count(*) as cnt
+from books
+group by publisher order by publisher asc ;
+
+-- 출판사별로 책들의 단가의 총합을 구해 보세요. 
+select publisher, sum(nvl(price,100)) as sumsal
+from books group by publisher ;
+
+-- 출판사별로 각각 몇 권의 서적을 가지고 있는지 확인해 보세요. 
+select publisher, count(nvl(bname,0)) as result
+from books group by publisher ;
+
+-- 출판사별로 책들의 단가의 총합과 최소 값을 구해보세요.
+select publisher, sum(nvl(price,10000)) as sumsal , min(nvl(price,0)) as minsal
+from books group by publisher ;
+-- 단, 단가가 null이면 10,000원으로 치환하여 계산해야 합니다. 
+-- 출판사별로 책들의 단가의 총합을 구하되, '민국 미디어'는 제외하도록 하고, 단가의 총합이 큰 것부터 정렬하세요. 
+select publisher, sum(nvl(price,100)) as sumsal
+from books 
+where publisher is not null and publisher != '민국 미디어' 
+group by publisher ;
+
+-- 출판사별로 책들의 단가의 총합을 구해 보세요.
+select publisher, sum(price) as sumsal
+from books 
+where price >= 20000
+group by publisher ;
+-- 단, 단가의 총합이 20,000이상인 항목만 조회하세요. 
+select * from books ;
+-- 출판사별로 책들의 단가의 총합을 구해 보세요.
+-- 단, 단가의 총합이 20,000이상이고, 30,000이하인 항목만 조회하세요. 
+select publisher, sum(price) as sumsal
+from books 
+where price >= 20000 and price <= 30000 
+group by publisher ;
+-- 시퀀스와 게시물
+-- 시퀀스 실습을 위하여 주문(orders) 테이블의 데이터를 모두 삭제합니다.
+-- 시퀀스 seqorder를 생성하고, 해당 시퀀스를 사용하여 주문(orders) 테이블을 다시 생성하세요.
+-- 
+create sequence seqorder ;
+
+delete from orders ;
+
+insert into orders(oid, cid, bid, saleprice, saledate) 
+values(seqorder.nextval, 'yoon', 'java', 6000, to_date('2021-07-01','yyyy-mm-dd')); 
+insert into orders(oid, cid, bid, saleprice, saledate) 
+values(seqorder.nextval, 'yoon', 'python', 21000, to_date('2021-07-03','yyyy-mm-dd'));
+insert into orders(oid, cid, bid, saleprice, saledate) 
+values(seqorder.nextval, 'yusin', 'database', 8000, to_date('2021-07-03','yyyy-mm-dd')); 
+insert into orders(oid, cid, bid, saleprice, saledate) 
+values(seqorder.nextval, 'shin', 'jsp', 6000, to_date('2021-07-04','yyyy-mm-dd')); 
+insert into orders(oid, cid, bid, saleprice, saledate) 
+values(seqorder.nextval, 'an', 'spring', 20000, to_date('2021-07-05','yyyy-mm-dd'));
+insert into orders(oid, cid, bid, saleprice, saledate) 
+values(seqorder.nextval, 'yoon', 'jsp', 12000, to_date('2021-07-07','yyyy-mm-dd'));
+insert into orders(oid, cid, bid, saleprice, saledate) 
+values(seqorder.nextval, 'an', 'jsp', 13000, to_date( '2021-08-15','yyyy-mm-dd'));
+insert into orders(oid, cid, bid, saleprice, saledate) 
+values(seqorder.nextval, 'shin', 'java', 12000, to_date('2021-03-01','yyyy-mm-dd')); 
+insert into orders(oid, cid, bid, saleprice, saledate) 
+values(seqorder.nextval, 'yusin', 'java', 7000, to_date('2021-12-25','yyyy-mm-dd')); 
+insert into orders(oid, cid, bid, saleprice, saledate) 
+values(seqorder.nextval, 'shin', 'python', 13000, to_date('2021-07-10','yyyy-mm-dd'));
+commit ;
+
+
+select * from orders ;
+-- 조인(Join)
+-- 고객의 이름과 주문한 책의 아이디를 조회해 보세요.      
+select cid,bid from orders ;
+-- 고객의 이름과 주문한 책의 아이디를 조회해 보세요. 
+select cid,bid from orders ;
+-- 단, 고객의 이름이 '안중근', '윤봉길'인 사람들만 조회하도록 합니다. 
+select customer.name, orders.bid
+from customer join orders
+on customer.id = orders.cid ;
+-- 다음과 같이 등급을 의미하는 테이블을 생성합니다.
+-- 
+create table grades(		
+	glevel varchar2(2),	
+	lowsal number,	
+	highsal number	
+);		
+insert into grades values('A', 0, 99) ;		
+insert into grades values('B', 100, 199) ;		
+insert into grades values('C', 200, 299) ;		
+insert into grades values('D', 300, 399) ;		
+insert into grades values('E', 400, 500) ;		
+commit ;		
+
+select * from grades;
+
+
+--  
+-- 생성한 등급 테이블을 이용하여 각 고객들의 등급 정보를 출력해 보세요.
+select c.name, c.salary, g.glevel
+from customer c, grades g
+where c.salary between g.lowsal and g.highsal ;
+-- 고객의 이름과 주문한 책의 아이디와 판매 금액을 조회해 보세요.
+-- 단, 주문하지 않은 고객들의 이름 정보도 출력이 되어야 합니다. 
+
+select c.name, c.id, o.bid ,o.saleprice
+from customer c full outer join orders o
+on c.id = o.cid ;
+
+-- 고객과 매니저 정보를 같이 출력해 보세요.
+
+select c.name, c.id, o.bid ,o.saleprice ,c.manager
+from customer c full outer join orders o
+on c.id = o.cid ;
+
+-- 매니저에 대한 정보는 manager 컬럼을 참조하면 됩니다.
+
+-- '윤봉길의 관리자는 shin입니다.'
+select c.name || '의 관리자는' || g.manager || '입니다' as result
+from customer c inner join customer g
+on c.id = g.manager ;
+
+-- 고객과 매니저 정보를 같이 출력해 보세요.
+-- 매니저도 하나의 행으로 출력이 되어야 합니다.  
+select c.name || '의 관리자는' || g.manager || '입니다' as result
+from customer c full join customer g
+on c.id = g.manager ;
+
+-- 각 고객들의 이름과 주문 건수를 출력해 보세요.
+-- 단, 주문하지 않은 고객들의 이름 정보도 출력이 되어야 합니다.
+select c.name, count(nvl(salary,0)) as cnt
+from customer c left outer join orders o
+on c.id = o.bid group by c.name order by cnt desc, c.name asc ;
