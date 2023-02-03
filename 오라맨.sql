@@ -796,8 +796,225 @@ select e.name, count(writer) as cnt
 from employees e left outer join boards b
 on e.id = b.writer group by e.name order by cnt desc, e.name asc ;
 
+-- 2023/02/03
 
+insert into employees(id, name, password, gender, birth, marriage, salary, address, manager)
+values('choi', '최불암', 'abc1234', '남자', '1990/12/25', '결혼', 220, '용산', 'yusin') ;
+--명령의 1 행에서 시작하는 중 오류 발생 -
+--insert into employees(id, name, password, gender, birth, marriage, salary, address, manager)
+--values('choi', '최불암', 'abc1234', '남자', '1990/12/25', '결혼', 220, '용산', 'yusin')
+--오류 보고 -
+--ORA-00001: unique constraint (ORAMAN.SYS_C008273) violated
 
+select table_name, constraint_name, constraint_type, status, search_condition 
+from user_constraints where table_name = 'EMPLOYEES';
 
+select table_name, constraint_name, constraint_type, status, search_condition 
+from user_constraints where table_name = 'BOARDS';
 
+select t.constraint_name, t.table_name, c.column_name, t.constraint_type, t.status, 
+t.search_condition
+from user_constraints t join user_cons_columns c 
+on t.table_name = c.table_name and t.constraint_name = c.constraint_name
+and t.table_name = 'EMPLOYEES' ;
+
+create table tab01(
+id varchar2(30) not null, 
+name varchar2(30) not null,
+salary number,
+gender varchar2(30) 
+);
+
+--id 컬럼과 name 컬럼은 필수 입력 사항이므로 다음 문장은 행을 추가하는 데 별 문제점이 없습니다.
+insert into tab01 values('kim9', '김구', null, null) ;
+--다음 문장은 ORA-01400 관련 오류가 발생합니다. 왜냐하면 id 컬럼과 name 컬럼은 필수 입력 사항인데, 
+--id 컬럼에 대한 조건 체크가 먼저 이루어지므로 id 컬럼에 대한 오류를 보여 주고 있습니다.
+--insert into tab01 values(null, null, null, null) ;
+
+create table tab02(
+id varchar2(30) unique,
+name varchar2(30) not null,
+salary number,
+gender varchar2(30) 
+);
+
+--다음 문장은 id와 name 컬럼에 데이터가 인서트 되고 있으므로, 전혀 문제가 없는 문장입니다.
+--insert into tab02 values('kim9', '김구', null, null) ;
+--다음 문장은 필수 입력 컬럼인 name에 데이터가 인서트 되고 있으므로, 전혀 문제가 없는 문장입니다. unique이라고 하더
+--라도, null 값은 추가될 수 있습니다. unique는 입력이 되는 데이터에 한해서 제약 조건을 점검하기 때문입니다.
+--insert into tab02 values(null, '이봉창', null, null) 
+
+insert into tab02 values('kim9', '김구', null, null) ;
+--명령의 22 행에서 시작하는 중 오류 발생 -
+--insert into tab02 values('kim9', '김구', null, null)
+--오류 보고 -
+--ORA-00001: unique constraint (ORAMAN.SYS_C008290) violated
+--unique 제약 조건은 내부적으로 인덱스를 생성합니다. 다음은 tab02 테이블에 대한 인덱스를 보여 주고 있습니다
+
+desc user_indexes ;
+select index_name, index_type, table_name 
+from user_indexes where table_name = 'TAB02' ;
+
+create table tab03(
+id varchar2(30) primary key,
+name varchar2(30) not null,
+salary number,
+gender varchar2(30) 
+);
+-- 다음 문장은 별 문제 없이 인서트 됩니다.
+insert into tab03 values('kim9', '김구', 100, '남자')  ;
+
+insert into tab03 values('kim9', '김유신', 200, '남자')
+--오류 보고 -
+--ORA-00001: unique constraint (ORAMAN.SYS_C008292) violated
+--primary key는 행이 인서트될 때 값이 not null 조건을 충족해야 합니다. 따라서 다음 문장은 오류가 발생합니다.
+--insert into tab03 values(null, '황진이', 300, '여자') ;
+--명령의 40 행에서 시작하는 중 오류 발생 -
+--오류 보고 -
+--ORA-01400: cannot insert NULL into ("ORAMAN"."TAB03"."ID"
+
+create table tab04(
+id varchar2(30) primary key,
+name varchar2(30) not null,
+salary number check(salary >= 100),
+gender varchar2(30) check(gender in('남자', '여자'))
+);
+-- 다음 문장은 별 문제 없이 인서트 됩니다.
+insert into tab04 values('kim9', '김구', 100, '남자') ;
+insert into tab04 values('lee', '이순신', 200, '남자') ;
+
+insert into tab04 values('soon', '유관순', 50, '여자') ;
+-- 명령의 12 행에서 시작하는 중 오류 발생 -
+insert into tab04 values('soon', '유관순', 50, '여자')
+-- 오류 보고 -
+ORA-02290: check constraint (ORAMAN.SYS_C008294) violated
+--성별 컬럼에는 '남자', '여자' 두 개의 항목 중에 하나가 인서트 될 수 있습니다.
+--따라서, 다음 문장은 성별에 따른 check 제약 조건을 위배하므로 인터스 되지 않습니다.
+insert into tab04 values('maria', '조마리아', 300, '여') ;
+--명령의 13 행에서 시작하는 중 오류 발생 -
+--insert into tab04 values('maria', '조마리아', 300, '여')
+--오류 보고 -
+--ORA-02290: check constraint (ORAMAN.SYS_C008295) violate
+
+create table member(
+name varchar2(20),
+hphone varchar2(15),
+adderess varchar2(50),
+constraint member_composite primary key(name, hphone) 
+);
+user_cons_columns 데이터 사전은 컬럼의 제약 조건에 대한 정보를 보여 주는 사전입니다. 이 사전을 이용
+하여 복합 키에 대한 정보를 확인할 수 있습니다. 
+select * from user_cons_columns 
+where table_name ='MEMBER';
+
+select t.constraint_name, t.table_name, c.column_name, t.constraint_type, t.status, 
+t.search_condition 
+from user_constraints t join user_cons_columns c 
+on t.table_name = c.table_name and t.constraint_name = c.constraint_name 
+and t.table_name = 'TAB01' ;
+
+alter table tab01 rename constraint SYS_C007043 to tab01_id_nn ;
+alter table tab01 rename constraint SYS_C007044 to tab01_name_nn ;
+테이블 tab01에 대한 제약 조건의 정보를 다시 확인해 보도록 합니다.
+select t.constraint_name, t.table_name, c.column_name, t.constraint_type, t.status, 
+t.search_condition 
+from user_constraints t join user_cons_columns c 
+on t.table_name = c.table_name and t.constraint_name = c.constraint_name 
+and t.table_name = 'TAB01'; 
+
+alter table tab01 drop constraint tab01_id_nn;
+alter table tab01 drop constraint tab01_name_nn ;
+
+alter table tab01 add primary key(id);
+primary key 제약 조건의 삭제는 다음과 같이 수행하면 됩니다.
+
+tab01 테이블의 제약 조건은 다음과 같이 삭제가 가능합니다.
+alter table tab01 drop primary key ;
+
+alter table tab01 add constraint tab01_name_uk unique(name)  ;
+
+alter table tab01 drop constraint tab01_name_uk ;
+
+select * from employees ;
+
+select min(salary) from employees ;
+
+select name, salary, address from employees where salary = 110  ;
+
+select name, salary, address from employees 
+where salary = ( select min(salary) from employees ) ;
+
+select name, salary from employees
+where salary >= (select avg(salary) from employees) ;
+
+select id, name, manager from employees
+where manager = (select id from employees where name = '김구');
+
+select id, name, manager from employees
+where manager = (select id from employees where name = '김구') or name = '김구' ;
+
+select * from employees ;
+
+select name, salary from employees
+where salary < (select salary from employees where name = '선덕여왕' ) ;
+
+select id, name, salary from employees
+where manager = (select id from employees where name = '김구')
+and salary < (select avg(salary) from employees) ;
+
+select id, name, salary from employees
+where manager = (select id from employees where name = '유관순')
+and salary > (select salary from employees where name = '논개') ;
+
+select id,name,manager from employees
+where manager in(select id from employees where name in ('김구','유관순')) ;
+
+select distinct writer from boards where writer is not null ;
+
+select name,birth,gender from employees
+where id in (select distinct writer from boards where writer is not null) ;
+
+select name,birth,gender,marriage from employees
+where id in (select id from employees where marriage not in ('이혼'))
+order by name;
+
+select name, salary from employees where manager = 'soon' ;
+-- > any : 최저 급여자 보다 더 많이 받는 사람들
+select name , salary from employees
+where salary > any(select salary from employees where manager = 'soon') ;
+-- > any : 최대 급여자 보다 더 적게 받는 사람들
+select name , salary from employees
+where salary < any(select salary from employees where manager = 'soon') ;
+-- > any : 최대 급여자 보다 더 많이 받는 사람들
+select name , salary from employees
+where salary > all(select salary from employees where manager = 'soon') ;
+-- > any : 최저 급여자 보다 더 적게 받는 사람들
+select name , salary from employees
+where salary < all(select salary from employees where manager = 'soon') ;
+
+select * from employees ;
+
+select gender , min(salary) from employees group by gender ;
+
+select name, salary, marriage from employees
+where (marriage, salary) in (select marriage,min(salary) from employees group by marriage) ;
+
+select name, salary, marriage from employees
+where (marriage, salary) in (select marriage,max(salary) from employees group by marriage) ;
+
+select distinct marriage from employees ;
+
+select marriage from employees ;
+
+select name, gender, salary, marriage from employees
+where (gender, salary) in (select gender,min(salary) from employees group by gender) ;
+
+select name, gender, salary, marriage from employees
+where (gender, salary) in (select gender,max(salary) from employees group by gender) ;
+
+select name, gender, salary ,address from employees
+where (address, salary) in (select address, min(salary) from employees group by address) ;
+
+select name, gender, salary ,address from employees
+where (address, salary) in (select address, max(salary) from employees group by address) ;
 

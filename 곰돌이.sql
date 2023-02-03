@@ -637,3 +637,162 @@ on c.id = g.manager ;
 select c.name, count(nvl(salary,0)) as cnt
 from customer c left outer join orders o
 on c.id = o.bid group by c.name order by cnt desc, c.name asc ;
+
+-- 서브 쿼리
+-- 평균 급여보다 더 많은 급여를 받는 고객들의 이름과 급여를 출력해 보겠습니다.
+select name, salary from customer
+where salary >= (select avg(salary) from customer) ;
+-- 관리자의 이름인 '신사임당'인 고객들의 아이디, 이름, 관리자 아이디를 출력해 보세요. 
+select id,name,manager from customer
+where manager = (select id from customer where name = '신사임당') ;
+-- 이 문제는 관리자의 이름 무엇인지를 확인하는 구문이 서브 쿼리에 놓여야 합니다. 
+
+-- 관리자의 이름인 '신사임당'인 고객들의 아이디, 이름, 관리자 아이디를 출력해 보세요. 
+-- 단, '신사임당'도 같이 출력되어야 합니다. 추가 조건은 and나 or 연산자를 사용하여 처리하면 됩니다. 
+select id, name, manager from customer
+where manager = (select id from customer where name = '신사임당') or name = '신사임당' ;
+-- '안중근'의 급여보다 적은 급여를 받는 고객들의 이름과 급여를 조회해 보세요.
+select name, salary from customer
+where salary < (select salary from customer where name = '안중근') ;
+-- 관리자가 '신사임당'이면서, 전체 회원의 평균 급여 보다 적은 급여를 받는 회원의 아이디, 이름, 급여를 조회해 보세요.
+select id,name,salary from customer
+where salary < (select avg(salary) from customer)
+and manager = (select id from customer where name = '신사임당' ) ;
+-- 관리자의 이름이 '신사임당'이거나 '홍범도'인 고객들의 아이디와 이름과 관리자 아이디를 조회해 보겠습니다. 
+select id,name,manager from customer 
+where manager in (select id from customer where name in('신사임당', '홍범도'));
+-- 두 관리자에 대한 서브 쿼리이므로 in 키워드를 사용하면 됩니다. 
+-
+-- 주문을 한번이라도 한 고객 정보를 조회해 보겠습니다. 
+select distinct saledate from orders where saleprice is not null ;
+-- 주문은 한 사람이 여러 번 작성할 수 있으므로 중복 데이터 배제를 위한 키워드 distinct를 사용하는 게 효율적입니다. 
+-- 매니저의 아이디가 'shin'이 아닌 모든 고객들의 정보를 출력해 보세요.
+select id,name,address,phone,manager,salary from customer
+where id in (select id from customer where manager not in ('shin'))
+order by name ;
+-- 관리자 아이디가 'shin'인 회원도 목록에서 배제 되어야 합니다.
+
+-- 관리자가 '신사임당'인 회원들을 이름과 급여를 조회해 보겠습니다.
+select name, salary from customer where manager = 'shin' ;  
+-- 전체 고객 중에서 관리자가 '신사임당'인 고객들 중에서 최저 급여를 받는 자보다 더 많이 급여를 받는 고객들의 이름과 급여를 조회해 보세요.
+select name, salary from customer 
+where salary > any (select salary from customer where manager = 'shin') ;
+-- 전체 고객 중에서 관리자가 '신사임당'인 고객 중에서 최대 급여를 받는 고객보다 더 적게 받는 고객들의 이름과 급여를 조회해 보세요. 
+select name, salary from customer 
+where salary < any (select salary from customer where manager = 'shin') ;
+
+-- 전체 고객 중에서 관리자가 '신사임당'인 고객 중에서 최대 급여자 보다 많이 받는 고객들을 조회해 보겠습니다. 
+select name,salary from customer
+where salary > all (select salary from customer where manager = 'shin') ;
+-- 전체 고객 중에서 관리자가 '신사임당'인 고객 중에서 최저 급여를 반든 자보다 더 적게 받는 고객들의 이름과 급여를 조회해 보세요.  
+select name,salary from customer
+where salary < all (select salary from customer where manager = 'shin') ;
+-- 다중 컬럼 서브 쿼리  
+-- 지금까지 사용한 서브 쿼리는 where 절에 비교 하기 위한 컬럼의 개수가 1개이었습니다. 
+-- 필요에 따라서, 2개 이상의 서브 쿼리를 사용할 수 있습니다. 
+-- 이러한 서브 쿼리를 다중 컬럼 서브 쿼리라고 합니다.
+-- 출판사별로 최저 단가를 가진 서적의 단가를 조회해 보겠습니다. 
+-- 우선 다음과 같이 출판사별로 최저 단가의 정보를 우선 조회해 봅니다. 
+select bname,publisher,price from books 
+where(publisher, price) in (select publisher ,min(price) from books group by publisher) ;
+-- 방금 사용했던 문장을 서브 쿼리로 두고, 
+-- 메인 쿼리의 where 절에 'where (publisher, salary)'의 형식으로 작성을 하면 다중 컬럼 서브 쿼리가 됩니다.
+
+-- 제약 조건
+-- 곰돌이 사용자의 모든 테이블에 대하여 데이터 사전을 이용하여 제약 조건을 확인해 보도록 하세요.
+-- 데이터 사전 user_cons_columns와 조인한 결과를 출력해 보세요.
+
+select t.constraint_name, t.table_name, c.column_name, t.constraint_type, t.status, 
+t.search_condition
+from user_constraints t join user_cons_columns c 
+on t.table_name = c.table_name and t.constraint_name = c.constraint_name
+and t.table_name = 'BOOKS' ;
+
+select t.constraint_name, t.table_name, c.column_name, t.constraint_type, t.status, 
+t.search_condition
+from user_constraints t join user_cons_columns c 
+on t.table_name = c.table_name and t.constraint_name = c.constraint_name
+and t.table_name = 'ORDERS' ;
+
+select t.constraint_name, t.table_name, c.column_name, t.constraint_type, t.status, 
+t.search_condition
+from user_constraints t join user_cons_columns c 
+on t.table_name = c.table_name and t.constraint_name = c.constraint_name
+and t.table_name = 'CUSTOMER' ;
+-- 각 테이블의 제약 조건의 이름을 적절히 변경해 보세요. 
+create table none01(
+    id varchar2(30) not null,
+    name varchar2(30) not null,
+    salary number,
+    manager varchar2(30)
+);
+
+insert into none01 values('kor','손흥민',32,null) ;
+
+insert into none01 values(null,null,null,null) ;
+
+create table none02(
+    id varchar2(30) not null,
+    name varchar2(30) unique,
+    salary number,
+    manager varchar2(30)
+);
+
+insert into none02 values('kor','김덕배',30,null) ;
+insert into none02 values('kor','안정환',30,null) ;
+insert into none02 values('kor','박지성',30,null) ;
+insert into none02 values('kor','홀란드',30,null) ;
+insert into none02 values('kor','홀란드',30,null) ;
+
+select * from none01 ;
+select * from none02 ;
+
+desc user_indexes ;
+
+select index_name, index_type, table_name
+from user_indexes where table_name = 'NONE02';
+
+
+create table none03(
+    id varchar2(30) primary key,
+    name varchar2(30) not null,
+    salary number,
+    manager varchar2(30)
+);
+
+insert into none03 values('kor','박지성',30,'축협') ;
+insert into none03 values('kor.youth','이강인',30,'축협') ;
+
+select * from none03 ;
+
+create table none04(
+    id varchar2(30) not null,
+    name varchar2(30) not null,
+    salary number,
+    team number check(team <= 30)
+);
+
+insert into none04 values('kor','박지성',30,7) ;
+insert into none04 values('kor','이강인',22,17) ;
+insert into none04 values('kor','손흥민',32,31) ;
+
+select * from none04 ;
+
+create table none05(
+    id varchar2(30) not null,
+    name varchar2(30) not null,
+    salary number,
+    team number check(team <= 30)
+);
+
+insert into none05 values('kor','박지성',30,7) ;
+insert into none05 values('kor','이강인',22,17) ;
+insert into none05 values('kor','손흥민',32,31) ;
+
+select * from none05 ;
+
+
+-- 모든 테이블에 대한 제약 조건의 정보를 다시 확인해 보도록 합니다.
+
+-- 제약 조건과 관련하여 기타 여러분이 필요하다고 판단되는 기능을 구현해 보도록 합니다.
+
